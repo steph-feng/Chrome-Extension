@@ -1,0 +1,10 @@
+{
+    "manifest_version": 3,
+    "name": "To Do List",
+    "description": "Keep track of your life!",
+    "version": "1.0",
+    "action": {
+      "default_popup": "display.html",
+      "default_icon": "/images/checklist.png"
+    }
+  }
