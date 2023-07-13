@@ -1,27 +1,24 @@
-let toDosText = [];
-let toDosCheckboxes = [];
-
-let uniqueID = 0;
+let toDoData = [];
 
 function initialize() {
     setTitle();
 
-    if (localStorage.getItem('toDoItems')) {
-        toDosText = JSON.parse(localStorage.getItem('toDoItems'));
+    if (localStorage.getItem('toDoData')) {
+        toDoData = JSON.parse(localStorage.getItem('toDoData'));
     }
 
-    if (localStorage.getItem('toDoCheckboxes')) {
-        toDosCheckboxes = JSON.parse(localStorage.getItem('toDoCheckboxes'));
-    }
-
-    toDosText.forEach(toDo => {
-        let checkbox = addNewItemElement(toDo);
-        let index = toDosText.indexOf(toDo);
-        if (toDosCheckboxes[index] === true) {
-            checkbox.checked = true;
+    toDoData.forEach(toDo => {
+        if (toDo.toDoValue) {
+            let checkbox = addNewItemElement(toDo.uniqueID, toDo.toDoValue);
+            checkbox.checked = toDo.toDoChecked;
         }
     })
-    addNewItemElement(''); 
+
+    addNewItemElement(generateUniqueID(), '');
+}
+
+function generateUniqueID() {
+    return Date.now() + Math.random();
 }
 
 function setTitle() {
@@ -36,10 +33,11 @@ function setTitle() {
     }
 }
 
-function addNewItemElement(value) {
+function addNewItemElement(id, value) {
     const newItem = document.createElement('div');
     newItem.setAttribute('class', 'flex');
     newItem.classList.add('container');
+    newItem.setAttribute('id', id.toString());
 
     const newCheckbox = document.createElement('input');
     newCheckbox.setAttribute('type', 'checkbox');
@@ -58,12 +56,10 @@ function addNewItemElement(value) {
     newItem.appendChild(newButton);
     document.getElementById('items').appendChild(newItem);
 
-
     newTextarea.addEventListener('keypress', function (event) {
         if (event.key === 'Enter') {
             event.preventDefault();
-            addNewItemElement('');
-            saveListItem(newTextarea)
+            addNewItemElement(generateUniqueID(), '');
             setTimeout(function () {
                 let textAreas = document.querySelectorAll('.textarea');
                 let newest = textAreas[textAreas.length - 1];
@@ -84,55 +80,58 @@ function addNewItemElement(value) {
         removeElementIfClicked(newButton)
     })
 
+    const checkDuplicateIndex = toDoData.findIndex(element => element.uniqueID === id);
+    if (checkDuplicateIndex === -1) {
+        toDoData.push({uniqueID: id.toString(), toDoValue: value, toDoChecked: false});
+    }
+
     return newCheckbox;
 }
 
 function saveListItem(textArea) {
-    let index = Array.from(document.querySelectorAll('.textarea')).indexOf(textArea);
+    const parentId = textArea.parentElement.id;
+    const index = toDoData.findIndex(element => element.uniqueID === parentId);
 
     if (textArea.value !== '') {
-        toDosText[index] = textArea.value;
+        toDoData[index].toDoValue = textArea.value;
     } else {
-        toDosText.splice(index, 1);
+        toDoData.splice(index, 1);
     }
 
-    localStorage.setItem('toDoItems', JSON.stringify(toDosText));
+    localStorage.setItem('toDoData', JSON.stringify(toDoData));
     textArea.removeEventListener('input', saveListItem);
 }
 
 function saveCheckboxes(checkbox) {
-    let index = Array.from(document.querySelectorAll('.checkbox')).indexOf(checkbox);
+    const parentId = checkbox.parentElement.id;
+    const index = toDoData.findIndex(element => element.uniqueID === parentId);
 
     if (checkbox.checked) {
-        toDosCheckboxes[index] = true;
+        toDoData[index].toDoChecked = true;
     } else {
-        toDosCheckboxes[index] = false;
+        toDoData[index].toDoChecked = false;
     }
 
-    localStorage.setItem('toDoCheckboxes', JSON.stringify(toDosCheckboxes));
-    checkbox.removeEventListener('click', saveCheckboxes);
+    localStorage.setItem('toDoData', JSON.stringify(toDoData));
+    checkbox.removeEventListener('change', saveCheckboxes);
 }
 
 
-function removeElementIfClicked(item) {
-    const parent = item.parentElement;
-    let text;
+function removeElementIfClicked(button) {
+    const parentId = button.parentElement.id;
+    const index = toDoData.findIndex(element => element.uniqueID === parentId);
+
+    const parent = button.parentElement;
+
     parent.querySelectorAll('.child').forEach(child => {
-        if (child.type === 'textarea') {
-            text = child.value;
-        }
         child.remove()
     });
     parent.remove();
 
-    const removeIndex = toDosText.indexOf(text);
-    toDosText.splice(removeIndex, 1);
-    localStorage.setItem('toDoItems', JSON.stringify(toDosText));
+    toDoData.splice(index, 1);
+    localStorage.setItem('toDoData', JSON.stringify(toDoData));
 
-    toDosCheckboxes.splice(removeIndex, 1);
-    localStorage.setItem('toDoCheckboxes', JSON.stringify(toDosCheckboxes));
-
-    item.removeEventListener('click', removeElementIfClicked);
+    button.removeEventListener('click', removeElementIfClicked);
 }
 
 window.addEventListener('DOMContentLoaded', initialize);
